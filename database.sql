@@ -1,0 +1,76 @@
+CREATE TABLE IF NOT EXISTS users (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(120) NOT NULL,
+ email VARCHAR(160) NOT NULL UNIQUE,
+ password_hash VARCHAR(255) NOT NULL,
+ role ENUM('admin','technician','doctor','patient') NOT NULL,
+ active TINYINT(1) NOT NULL DEFAULT 1,
+ created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS patients (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ user_id INT NOT NULL UNIQUE,
+ patient_code VARCHAR(40) NOT NULL UNIQUE,
+ phone VARCHAR(30),
+ gender VARCHAR(20),
+ date_of_birth DATE,
+ FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS doctors (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ user_id INT NOT NULL UNIQUE,
+ specialization VARCHAR(120),
+ FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS technicians (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ user_id INT NOT NULL UNIQUE,
+ staff_code VARCHAR(40) NOT NULL UNIQUE,
+ FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS test_categories (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ name VARCHAR(100) NOT NULL UNIQUE,
+ description TEXT
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS laboratory_tests (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ category_id INT NOT NULL,
+ test_name VARCHAR(150) NOT NULL,
+ price DECIMAL(10,2) NOT NULL DEFAULT 0,
+ description TEXT,
+ active TINYINT(1) NOT NULL DEFAULT 1,
+ FOREIGN KEY(category_id) REFERENCES test_categories(id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS test_requests (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ patient_id INT NOT NULL,
+ doctor_id INT NOT NULL,
+ test_id INT NOT NULL,
+ technician_id INT NULL,
+ request_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ status ENUM('Requested','In Progress','Completed','Cancelled') NOT NULL DEFAULT 'Requested',
+ notes TEXT,
+ FOREIGN KEY(patient_id) REFERENCES patients(id),
+ FOREIGN KEY(doctor_id) REFERENCES doctors(id),
+ FOREIGN KEY(test_id) REFERENCES laboratory_tests(id),
+ FOREIGN KEY(technician_id) REFERENCES technicians(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS test_reports (
+ id INT AUTO_INCREMENT PRIMARY KEY,
+ request_id INT NOT NULL UNIQUE,
+ file_name VARCHAR(255) NOT NULL,
+ original_name VARCHAR(255) NOT NULL,
+ uploaded_by INT NOT NULL,
+ report_notes TEXT,
+ uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+ FOREIGN KEY(request_id) REFERENCES test_requests(id) ON DELETE CASCADE,
+ FOREIGN KEY(uploaded_by) REFERENCES users(id)
+) ENGINE=InnoDB;

@@ -1,0 +1,8 @@
+<?php
+require_once 'includes/functions.php'; require_role(['doctor']);
+$doctor=db()->prepare('SELECT id FROM doctors WHERE user_id=?');$doctor->execute([user()['id']]);$doctorId=(int)$doctor->fetchColumn();
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$patient=(int)($_POST['patient_id']??0);$test=(int)($_POST['test_id']??0);$notes=trim($_POST['notes']??'');
+$valid=db()->prepare('SELECT COUNT(*) FROM patients WHERE id=?');$valid->execute([$patient]);
+if($valid->fetchColumn() && $doctorId && $test){db()->prepare('INSERT INTO test_requests(patient_id,doctor_id,test_id,notes) VALUES(?,?,?,?)')->execute([$patient,$doctorId,$test,$notes]);flash('Test request submitted.');}else flash('Select a valid patient and test.','error');redirect('request_test.php');}
+header_html('Request test');$patients=db()->query("SELECT p.id,p.patient_code,u.name FROM patients p JOIN users u ON u.id=p.user_id ORDER BY u.name")->fetchAll();$tests=db()->query('SELECT id,test_name FROM laboratory_tests WHERE active=1 ORDER BY test_name')->fetchAll();?>
+<h1>Request laboratory test</h1><section class="card"><form method="post"><?=csrf_field()?><label>Patient</label><select name="patient_id" required><?php foreach($patients as $p):?><option value="<?=$p['id']?>"><?=e($p['name'].' ('.$p['patient_code'].')')?></option><?php endforeach;?></select><label>Test</label><select name="test_id" required><?php foreach($tests as $t):?><option value="<?=$t['id']?>"><?=e($t['test_name'])?></option><?php endforeach;?></select><label>Clinical notes / instructions</label><textarea name="notes"></textarea><button>Submit request</button></form></section><?php footer_html();?>
